@@ -22,6 +22,9 @@ app.use(cors({
     "http://localhost:4174",
     "http://localhost:4175",
     "https://login-mfe-sage.vercel.app",
+    "https://progress-mfe.vercel.app",
+    "https://todo-mfe.vercel.app",
+    "https://host-mfe-ochre.vercel.app"
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true,
