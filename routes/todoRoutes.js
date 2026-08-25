@@ -48,7 +48,7 @@ router.post("/todos", authMiddleware, async (req, res) => {
 
         res.status(400).json({
             message: "Error in creating todo",
-            error: e
+            error: e.message
         });
     }
 });
@@ -62,7 +62,7 @@ router.delete("/todos/:id", authMiddleware, async (req, res) => {
         }       
         res.status(200).json({ message: "Todo deleted successfully", deletedTodo });
     } catch (e) {
-        res.status(400).json({ message: "Error in deleting todo", error: e });
+        res.status(400).json({ message: "Error in deleting todo", error: e.message });
     }
 });
 

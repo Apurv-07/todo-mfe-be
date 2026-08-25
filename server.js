@@ -5,7 +5,8 @@ const cookieParser = require('cookie-parser')
 const dotenv = require('dotenv').config();
 const userrouter = require('./routes/userRoutes')
 const todorouter = require('./routes/todoRoutes')
-const cors = require('cors')
+const cors = require('cors');
+const progressrouter = require('./routes/progressRoutes');
 
 const PORT = process.env.PORT;
 const URL = process.env.URL;
@@ -33,6 +34,7 @@ app.use(cors({
 }));
 app.use('/user', userrouter);
 app.use('/todo', todorouter);
+app.use('/todo-calendar', progressrouter)
 app.listen(PORT, async()=>{
     try {
         const connect = await mongoose.connect(URL)
