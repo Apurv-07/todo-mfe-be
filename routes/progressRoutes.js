@@ -5,7 +5,7 @@ const progressrouter = express.Router();
 const updateTodayProgress = require('../Middleware/updateProgress');
 
 
-const { getStartOfISTDay } = require("../utils/dateUtils");
+const { getStartOfISTDay } = require("../Middleware/ITCHelper");
 
 progressrouter.get(
     "/progress",
