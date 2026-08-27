@@ -1,6 +1,6 @@
 const {
     getStartOfISTDay
-} = require("../utils/dateUtils");
+} = require("../Middleware/ITCHelper");
 
 const updateTodayProgress = async (userId) => {
 
