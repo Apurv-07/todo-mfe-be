@@ -36,7 +36,8 @@ progressrouter.get(
                         userId,
                         day: new Date(currentDay),
                         completed: 0,
-                        status: false
+                        status: false,
+                        attempted: false
                     });
 
                     currentDay.setUTCDate(

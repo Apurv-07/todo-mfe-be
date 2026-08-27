@@ -37,21 +37,22 @@ const updateTodayProgress = async (userId) => {
     }
 
     return await progressModel.findOneAndUpdate(
-        {
-            userId,
-            day: startOfToday
-        },
-        {
-            userId,
-            day: startOfToday,
-            completed: completedCount,
-            status: allCompleted
-        },
-        {
-            upsert: true,
-            new: true
-        }
-    );
+    {
+        userId,
+        day: startOfToday
+    },
+    {
+        userId,
+        day: startOfToday,
+        completed: completedCount,
+        status: allCompleted,
+        attempted: true
+    },
+    {
+        upsert: true,
+        new: true
+    }
+);
 };
 
 module.exports = updateTodayProgress;
