@@ -1,12 +1,16 @@
-const progressModel = require('../schemas/ProgressModel');
-const todoModel = require('../schemas/TodoModel');
+const {
+    getStartOfISTDay
+} = require("../utils/dateUtils");
+
 const updateTodayProgress = async (userId) => {
 
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
+    const startOfToday = getStartOfISTDay();
 
     const endOfToday = new Date(startOfToday);
-    endOfToday.setDate(endOfToday.getDate() + 1);
+
+    endOfToday.setUTCDate(
+        endOfToday.getUTCDate() + 1
+    );
 
     // Get today's todos
     const todos = await todoModel.find({
@@ -49,4 +53,5 @@ const updateTodayProgress = async (userId) => {
         }
     );
 };
+
 module.exports = updateTodayProgress;

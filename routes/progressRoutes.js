@@ -5,111 +5,150 @@ const progressrouter = express.Router();
 const updateTodayProgress = require('../Middleware/updateProgress');
 
 
-progressrouter.get("/progress", authMiddleware, async (req, res) => {
-    const userId = req.user.userId;
+const { getStartOfISTDay } = require("../utils/dateUtils");
 
-    try {
-        const latestProgress = await progressModel
-            .findOne({ userId })
-            .sort({ day: -1 });
+progressrouter.get(
+    "/progress",
+    authMiddleware,
+    async (req, res) => {
 
-        if (latestProgress) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+        const userId = req.user.userId;
 
-            const lastDay = new Date(latestProgress.day);
-            lastDay.setHours(0, 0, 0, 0);
+        try {
+            const today = getStartOfISTDay();
+            const latestProgress = await progressModel
+                .findOne({ userId })
+                .sort({ day: -1 });
 
-            const missingDays = [];
-
-            const currentDay = new Date(lastDay);
-            currentDay.setDate(currentDay.getDate() + 1);
-
-            while (currentDay < today) {
-                missingDays.push({
-                    userId,
-                    day: new Date(currentDay),
-                    completed: 0,
-                    status: false
-                });
-
-                currentDay.setDate(currentDay.getDate() + 1);
-            }
-
-            if (missingDays.length > 0) {
-                await progressModel.insertMany(
-                    missingDays,
-                    {
-                        ordered: false
-                    }
+            if (latestProgress) {
+                const lastDay = getStartOfISTDay(
+                    latestProgress.day
                 );
+                const missingDays = [];
+                const currentDay = new Date(lastDay);
+                // Move to next IST day
+                currentDay.setUTCDate(
+                    currentDay.getUTCDate() + 1
+                );
+
+                while (currentDay < today) {
+                    missingDays.push({
+                        userId,
+                        day: new Date(currentDay),
+                        completed: 0,
+                        status: false
+                    });
+
+                    currentDay.setUTCDate(
+                        currentDay.getUTCDate() + 1
+                    );
+                }
+
+                if (missingDays.length > 0) {
+
+                    await progressModel.insertMany(
+                        missingDays,
+                        {
+                            ordered: false
+                        }
+                    );
+                }
             }
-        }
-        await updateTodayProgress(userId);
+            await updateTodayProgress(userId);
+
+            const now = new Date();
+            const istParts =
+                new Intl.DateTimeFormat("en-CA", {
+                    timeZone: "Asia/Kolkata",
+                    year: "numeric",
+                    month: "2-digit"
+                }).formatToParts(now);
+
+            const currentYear = Number(
+                istParts.find(
+                    p => p.type === "year"
+                ).value
+            );
+
+            const currentMonth = Number(
+                istParts.find(
+                    p => p.type === "month"
+                ).value
+            );
+
+            const year =
+                Number(req.query.year) || currentYear;
+
+            const month =
+                Number(req.query.month) || currentMonth;
 
 
-        const now = new Date();
+            if (
+                !Number.isInteger(year) ||
+                month < 1 ||
+                month > 12
+            ) {
+                return res.status(400).json({
+                    message: "Invalid month"
+                });
+            }
+            const startOfMonth = new Date(
+                Date.UTC(
+                    year,
+                    month - 1,
+                    1
+                ) - (5.5 * 60 * 60 * 1000)
+            );
+            const startOfNextMonth = new Date(
+                Date.UTC(
+                    year,
+                    month,
+                    1
+                ) - (5.5 * 60 * 60 * 1000)
+            );
+            const results = await progressModel
+                .find({
+                    userId,
+                    day: {
+                        $gte: startOfMonth,
+                        $lt: startOfNextMonth
+                    }
+                })
+                .sort({ day: 1 });
 
-        const year =
-            Number(req.query.year) || now.getFullYear();
 
-        const month =
-            Number(req.query.month) || now.getMonth() + 1;
+             res.status(200).json({
 
-        if (month < 1 || month > 12) {
-            return res.status(400).json({
-                message: "Invalid month"
+                message:
+                    "Progress fetched successfully",
+
+                results,
+
+                month: {
+                    year,
+                    month
+                }
+
+            });
+
+        } catch (e) {
+
+            console.error(
+                "GET PROGRESS ERROR:",
+                e.message
+            );
+
+            res.status(500).json({
+
+                message:
+                    "Error in fetching progress",
+
+                error: e.message
+
             });
         }
-        const startOfMonth = new Date(
-            year,
-            month - 1,
-            1
-        );
-
-        startOfMonth.setHours(0, 0, 0, 0);
-
-        const startOfNextMonth = new Date(
-            year,
-            month,
-            1
-        );
-
-        startOfNextMonth.setHours(0, 0, 0, 0);
-
-
-        const results = await progressModel
-            .find({
-                userId,
-                day: {
-                    $gte: startOfMonth,
-                    $lt: startOfNextMonth
-                }
-            })
-            .sort({ day: 1 });
-
-        res.status(200).json({
-            message: "Progress fetched successfully",
-            results,
-            month: {
-                year,
-                month
-            }
-        });
-
-    } catch (e) {
-
-        console.error(
-            "GET PROGRESS ERROR:",
-            e.message
-        );
-
-        res.status(500).json({
-            message: "Error in fetching progress",
-            error: e.message
-        });
     }
-});
+);
 
 
 module.exports = progressrouter;
