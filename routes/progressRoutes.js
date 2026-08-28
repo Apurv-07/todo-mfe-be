@@ -1,55 +1,49 @@
 const express = require('express');
+const { DateTime } = require("luxon");
 const progressModel = require('../schemas/ProgressModel');
 const authMiddleware = require('../Middleware/authMiddleware');
 const progressrouter = express.Router();
 const updateTodayProgress = require('../Middleware/updateProgress');
 
 
-const { getStartOfISTDay } = require("../Middleware/ITCHelper");
-
 progressrouter.get("/progress", authMiddleware, async (req, res) => {
     const userId = req.user.userId;
 
     try {
-        // Update today's progress from today's actual todos
-        await updateTodayProgress(userId);
-
-        const now = new Date();
+        // Always determine current date/month using IST
+        const now = DateTime.now().setZone("Asia/Kolkata");
 
         const year =
-            Number(req.query.year) || now.getFullYear();
+            Number(req.query.year) || now.year;
 
         const month =
-            Number(req.query.month) || now.getMonth() + 1;
+            Number(req.query.month) || now.month;
 
         if (month < 1 || month > 12) {
             return res.status(400).json({
                 message: "Invalid month"
             });
         }
-
-        const startOfMonth = new Date(
-            year,
-            month - 1,
-            1
-        );
-
-        startOfMonth.setHours(0, 0, 0, 0);
-
-        const startOfNextMonth = new Date(
-            year,
-            month,
-            1
-        );
-
-        startOfNextMonth.setHours(0, 0, 0, 0);
+        await updateTodayProgress(userId);
+        const startOfMonth = DateTime.fromObject(
+            {
+                year,
+                month,
+                day: 1
+            },
+            {
+                zone: "Asia/Kolkata"
+            }
+        ).startOf("month");
+        const startOfNextMonth =
+            startOfMonth.plus({ months: 1 });
 
         const results = await progressModel
             .find({
                 userId,
                 day: {
-                    $gte: startOfMonth,
-                    $lt: startOfNextMonth
+                    $gte: startOfMonth.toJSDate(),
+                    $lt: startOfNextMonth.toJSDate()
                 }
             })
             .sort({ day: 1 });

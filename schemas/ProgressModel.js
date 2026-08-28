@@ -21,11 +21,6 @@ const progressSchema = new mongoose.Schema({
         type: Date,
         required: true
     },
-     attempted: {
-        type: Boolean,
-        required: true,
-        default: true
-    }
 }, {
     timestamps: true
 });

@@ -1,22 +1,31 @@
-const updateTodayProgress = async (userId) => {
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
+const { DateTime } = require("luxon");
 
-    const endOfToday = new Date(startOfToday);
-    endOfToday.setDate(endOfToday.getDate() + 1);
+const progressModel = require("../schemas/ProgressModel");
+const todoModel = require("../schemas/TodoModel");
+
+const TIMEZONE = "Asia/Kolkata";
+
+const updateTodayProgress = async (userId) => {
+    // IST midnight
+    const startOfToday = DateTime
+        .now()
+        .setZone(TIMEZONE)
+        .startOf("day");
+
+    // Next IST midnight
+    const endOfToday = startOfToday.plus({ days: 1 });
 
     const todos = await todoModel.find({
         userId,
         createdAt: {
-            $gte: startOfToday,
-            $lt: endOfToday
+            $gte: startOfToday.toJSDate(),
+            $lt: endOfToday.toJSDate()
         }
     });
 
     const totalTodos = todos.length;
 
-    // No activity today.
-    // Do NOT create a progress record.
+    // No activity today = don't create a progress record
     if (totalTodos === 0) {
         return null;
     }
@@ -31,11 +40,11 @@ const updateTodayProgress = async (userId) => {
     return await progressModel.findOneAndUpdate(
         {
             userId,
-            day: startOfToday
+            day: startOfToday.toJSDate()
         },
         {
             userId,
-            day: startOfToday,
+            day: startOfToday.toJSDate(),
             completed: completedCount,
             status: allCompleted
         },

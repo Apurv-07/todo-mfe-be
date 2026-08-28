@@ -57,15 +57,33 @@ router.post("/todos", authMiddleware, async (req, res) => {
 
 router.delete("/todos/:id", authMiddleware, async (req, res) => {
     const { id } = req.params;
+
     try {
-        const deletedTodo = await todoModel.findOneAndDelete({ _id: id, userId: req.user.userId });
+        const userId = req.user.userId;
+
+        const deletedTodo = await todoModel.findOneAndDelete({
+            _id: id,
+            userId
+        });
+
         if (!deletedTodo) {
-            return res.status(404).json({ message: "Todo not found or you don't have permission to delete it" });
-        }  
-        await updateTodayProgress(userId);     
-        res.status(200).json({ message: "Todo deleted successfully", deletedTodo });
+            return res.status(404).json({
+                message: "Todo not found or you don't have permission to delete it"
+            });
+        }
+
+        await updateTodayProgress(userId);
+
+        res.status(200).json({
+            message: "Todo deleted successfully",
+            deletedTodo
+        });
+
     } catch (e) {
-        res.status(400).json({ message: "Error in deleting todo", error: e.message });
+        res.status(400).json({
+            message: "Error in deleting todo",
+            error: e.message
+        });
     }
 });
 
