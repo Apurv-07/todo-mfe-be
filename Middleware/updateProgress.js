@@ -1,18 +1,10 @@
-const {
-    getStartOfISTDay
-} = require("../Middleware/ITCHelper");
-
 const updateTodayProgress = async (userId) => {
-
-    const startOfToday = getStartOfISTDay();
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
 
     const endOfToday = new Date(startOfToday);
+    endOfToday.setDate(endOfToday.getDate() + 1);
 
-    endOfToday.setUTCDate(
-        endOfToday.getUTCDate() + 1
-    );
-
-    // Get today's todos
     const todos = await todoModel.find({
         userId,
         createdAt: {
@@ -21,38 +13,37 @@ const updateTodayProgress = async (userId) => {
         }
     });
 
-    const completedCount = todos.filter(
-        todo => todo.status === true
-    ).length;
-
     const totalTodos = todos.length;
 
-    const allCompleted =
-        totalTodos > 0 &&
-        completedCount === totalTodos;
-
-    // If there are no todos, don't create progress
+    // No activity today.
+    // Do NOT create a progress record.
     if (totalTodos === 0) {
         return null;
     }
 
+    const completedCount = todos.filter(
+        todo => todo.status === true
+    ).length;
+
+    const allCompleted =
+        completedCount === totalTodos;
+
     return await progressModel.findOneAndUpdate(
-    {
-        userId,
-        day: startOfToday
-    },
-    {
-        userId,
-        day: startOfToday,
-        completed: completedCount,
-        status: allCompleted,
-        attempted: true
-    },
-    {
-        upsert: true,
-        new: true
-    }
-);
+        {
+            userId,
+            day: startOfToday
+        },
+        {
+            userId,
+            day: startOfToday,
+            completed: completedCount,
+            status: allCompleted
+        },
+        {
+            upsert: true,
+            new: true
+        }
+    );
 };
 
 module.exports = updateTodayProgress;

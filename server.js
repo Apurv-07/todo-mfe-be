@@ -1,4 +1,4 @@
-const express = require ('express')
+const express = require('express')
 const app = express();
 const mongoose = require('mongoose')
 const cookieParser = require('cookie-parser')
@@ -35,11 +35,15 @@ app.use(cors({
 app.use('/user', userrouter);
 app.use('/todo', todorouter);
 app.use('/todo-calendar', progressrouter)
-app.listen(PORT, async()=>{
-    try {
-        const connect = await mongoose.connect(URL)
-        console.log(`DB connected and Server is running on ${PORT}`)
-    }catch(e){
-        console.log("ERR", e)
-    }
+app.listen(PORT, async () => {
+  try {
+    const connect = await mongoose.connect(URL)
+    console.log(`DB connected and Server is running on ${PORT}`)
+    console.log(new Date().toString());
+    console.log(
+      Intl.DateTimeFormat().resolvedOptions().timeZone
+    );
+  } catch (e) {
+    console.log("ERR", e)
+  }
 })

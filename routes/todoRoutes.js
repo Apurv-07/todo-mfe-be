@@ -28,16 +28,19 @@ router.get("/todos", authMiddleware, async (req, res) => {
 
 router.post("/todos", authMiddleware, async (req, res) => {
     const { todo } = req.body;
+
     try {
         const userId = req.user.userId;
-        const startOfToday = new Date();
-        startOfToday.setHours(0, 0, 0, 0);
 
-        await progressModel.deleteOne({ userId, day: startOfToday });
-
-        const newTodo = new todoModel({ todo, status: false, userId });
+        const newTodo = new todoModel({
+            todo,
+            status: false,
+            userId
+        });
 
         await newTodo.save();
+
+        await updateTodayProgress(userId);
 
         res.status(200).json({
             message: "Todo created successfully",
@@ -45,7 +48,6 @@ router.post("/todos", authMiddleware, async (req, res) => {
         });
 
     } catch (e) {
-
         res.status(400).json({
             message: "Error in creating todo",
             error: e.message
@@ -59,7 +61,8 @@ router.delete("/todos/:id", authMiddleware, async (req, res) => {
         const deletedTodo = await todoModel.findOneAndDelete({ _id: id, userId: req.user.userId });
         if (!deletedTodo) {
             return res.status(404).json({ message: "Todo not found or you don't have permission to delete it" });
-        }       
+        }  
+        await updateTodayProgress(userId);     
         res.status(200).json({ message: "Todo deleted successfully", deletedTodo });
     } catch (e) {
         res.status(400).json({ message: "Error in deleting todo", error: e.message });
