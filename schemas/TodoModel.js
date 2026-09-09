@@ -17,7 +17,7 @@ const todoSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now,
-        expires: 86400
+        expires: 60 * 60 * 24 * 30
     }
 }, {
     timestamps: {

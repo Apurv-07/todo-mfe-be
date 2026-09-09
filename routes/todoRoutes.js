@@ -8,21 +8,93 @@ const updateTodayProgress = require('../Middleware/updateProgress')
 router.get("/todos", authMiddleware, async (req, res) => {
     const userId = req.user.userId;
     const { status } = req.query;
-    if (status !== undefined) {
-        const statusBoolean = status === 'true';
-        try {
-            const todos = await todoModel.find({ userId, status: statusBoolean });
-            res.status(200).json({ message: "Todos fetched successfully", todos });
-        } catch (e) {
-            res.status(400).json({ message: "Error in fetching todos", error: e });
+
+    try {
+        const now = new Date();
+
+        // Get today's date in IST
+        const istDate = new Intl.DateTimeFormat("en-CA", {
+            timeZone: "Asia/Kolkata",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+        }).format(now);
+
+        // IST midnight -> UTC
+        const startOfDay = new Date(`${istDate}T00:00:00+05:30`);
+
+        // Tomorrow's IST midnight -> UTC
+        const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+
+        const query = {
+            userId,
+            createdAt: {
+                $gte: startOfDay,
+                $lt: endOfDay,
+            },
+        };
+
+        if (status !== undefined) {
+            query.status = status === "true";
         }
-    } else {
-        try {
-            const todos = await todoModel.find({ userId });
-            res.status(200).json({ message: "Todos fetched successfully", todos });
-        } catch (e) {
-            res.status(400).json({ message: "Error in fetching todos", error: e });
+
+        const todos = await todoModel.find(query);
+
+        res.status(200).json({
+            message: "Todos fetched successfully",
+            todos,
+        });
+    } catch (e) {
+        res.status(400).json({
+            message: "Error in fetching todos",
+            error: e,
+        });
+    }
+});
+
+router.get("/todos/date/:date", authMiddleware, async (req, res) => {
+    const userId = req.user.userId;
+    const { date } = req.params;
+
+    try {
+        // Validate YYYY-MM-DD
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            return res.status(400).json({
+                message: "Invalid date format. Use YYYY-MM-DD",
+            });
         }
+
+        // Start of requested day in IST
+        const startOfDay = new Date(`${date}T00:00:00+05:30`);
+
+        if (isNaN(startOfDay.getTime())) {
+            return res.status(400).json({
+                message: "Invalid date",
+            });
+        }
+
+        // Start of next day in IST
+        const endOfDay = new Date(
+            startOfDay.getTime() + 24 * 60 * 60 * 1000
+        );
+
+        const todos = await todoModel.find({
+            userId,
+            createdAt: {
+                $gte: startOfDay,
+                $lt: endOfDay,
+            },
+        });
+
+        res.status(200).json({
+            message: "Todos fetched successfully",
+            todos,
+        });
+    } catch (e) {
+        res.status(400).json({
+            message: "Error in fetching todos",
+            error: e,
+        });
     }
 });
 
